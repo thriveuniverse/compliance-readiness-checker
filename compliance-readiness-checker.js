@@ -860,6 +860,3 @@ function generateEvidence(question) {
         console.groupEnd();
     }
 })();
-
-index.html
-New

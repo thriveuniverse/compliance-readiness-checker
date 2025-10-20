@@ -791,9 +791,33 @@
     const saveStateLabel = document.getElementById('saveStateLabel');
 
     (async () => {
-      const moduleUrl = new URL('./complianceChecker.js', import.meta.url);
+      const moduleCandidates = [
+        './complianceChecker.js',
+        './compliancechecker.js',
+        './compliance-readiness-checker.js'
+      ];
+
       try {
-        const { createQuestionnaire, evaluateAnswers, generateReport, getMetadata } = await import(moduleUrl.href);
+        let moduleNamespace = null;
+        let lastImportError = null;
+
+        for (const candidate of moduleCandidates) {
+          const moduleUrl = new URL(candidate, import.meta.url);
+          try {
+            moduleNamespace = await import(moduleUrl.href);
+            break;
+          } catch (error) {
+            lastImportError = error;
+            console.warn(`Failed to import ${candidate}`, error);
+          }
+        }
+
+        if (!moduleNamespace) {
+          const attempted = moduleCandidates.join(', ');
+          throw new Error(`Unable to import compliance module. Tried: ${attempted}. ${lastImportError ? lastImportError.message : ''}`);
+        }
+
+        const { createQuestionnaire, evaluateAnswers, generateReport, getMetadata } = moduleNamespace;
 
         const metadata = getMetadata();
         const questions = createQuestionnaire();
@@ -1460,7 +1484,7 @@
       } catch (error) {
         console.error('Unable to initialize the Compliance Readiness Checker.', error);
         if (statusRegion) {
-          statusRegion.textContent = 'Unable to load questionnaire data. Please refresh or confirm complianceChecker.js is deployed alongside index.html.';
+          statusRegion.textContent = 'Unable to load questionnaire data. Confirm the compliance module file (e.g., complianceChecker.js) is deployed next to index.html with matching capitalization.';
           statusRegion.style.color = 'var(--color-danger)';
         }
         if (saveStateLabel) {
