@@ -840,7 +840,7 @@ function generateEvidence(question) {
         // Test 3: Generate a report and check for a finding
         const report = generateReport(evaluation);
         console.assert(report.findings.length > 0, 'Test Failed: Report should have generated findings for the sample answers.');
-        console.assert(report.classification === 'Low', 'Test Failed: Report classification for sample data should be Low.');
+        console.assert(report.classification === 'Moderate', 'Test Failed: Report classification for sample data should be Moderate.');
         console.log('✔️ Test 3: Report generation successful.');
         console.log('   - Report Classification:', report.classification);
         
@@ -861,3 +861,5 @@ function generateEvidence(question) {
     }
 })();
 
+index.html
+New

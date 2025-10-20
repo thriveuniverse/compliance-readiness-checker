@@ -787,658 +787,687 @@
     </main>
   </div>
   <script type="module">
-    import { createQuestionnaire, evaluateAnswers, generateReport, getMetadata } from './complianceChecker.js';
-
-    const metadata = getMetadata();
-    const questions = createQuestionnaire();
-    const questionMap = new Map(questions.map(q => [q.id, q]));
-    const totalQuestions = questions.length;
-    const appRoot = document.getElementById('appRoot');
-    const form = document.getElementById('questionnaireForm');
-    const questionnaireView = document.getElementById('questionnaireView');
-    const resultsView = document.getElementById('resultsView');
-    const progressCountEl = document.getElementById('progressCount');
-    const progressPercentEl = document.getElementById('progressPercent');
-    const progressBarEl = document.getElementById('progressBar');
     const statusRegion = document.getElementById('statusRegion');
     const saveStateLabel = document.getElementById('saveStateLabel');
-    const domainNav = document.getElementById('domainNav');
-    const saveProgressBtn = document.getElementById('saveProgressBtn');
-    const clearProgressBtn = document.getElementById('clearProgressBtn');
-    const editLaterBtn = document.getElementById('editLaterBtn');
-    const themeToggleBtn = document.getElementById('themeToggle');
-    const scoreCards = document.getElementById('scoreCards');
-    const domainTableBody = document.getElementById('domainTableBody');
-    const strengthsList = document.getElementById('strengthsList');
-    const quickWinsList = document.getElementById('quickWinsList');
-    const next30List = document.getElementById('next30List');
-    const findingsContainer = document.getElementById('findingsContainer');
-    const editAnswersBtn = document.getElementById('editAnswersBtn');
-    const exportJsonBtn = document.getElementById('exportJsonBtn');
-    const printBtn = document.getElementById('printBtn');
-    const generatedAtEl = document.getElementById('generatedAt');
-    const mainContent = document.getElementById('mainContent');
 
-    document.getElementById('appTitle').textContent = `${metadata.appName}`;
-    document.getElementById('disclaimerBadge').textContent = metadata.disclaimer;
-
-    const LOCAL_STORAGE_KEY = 'crc-answers-v1';
-    const THEME_STORAGE_KEY = 'crc-theme';
-
-    const state = {
-      answers: {},
-      evaluation: null,
-      report: null,
-      view: 'questionnaire',
-      dirty: false,
-    };
-
-    const domainTotals = {};
-    questions.forEach(q => {
-      domainTotals[q.domain] = (domainTotals[q.domain] || 0) + 1;
-    });
-
-    const domainIntros = {
-      'Administrative Safeguards': 'Establish governance, policies, and workforce programs that underpin HIPAA security.',
-      'Physical Safeguards': 'Protect physical spaces and media housing sensitive health information.',
-      'Technical Safeguards': 'Apply technical controls to secure electronic protected health information (ePHI).',
-      'Breach Notification': 'Prepare to detect, evaluate, and report potential data breaches promptly.',
-      'Lawful Basis and Transparency': 'Demonstrate clear, lawful grounds and transparency for processing personal data.',
-      'Data Subject Rights': 'Operationalize workflows that honor individuals’ rights over their personal data.',
-      'DPIA and Records': 'Document processing activities and assess privacy risks for high-impact initiatives.',
-      'Security of Processing': 'Ensure technical and organizational measures match the risk profile of your processing.',
-      'Processors and DPAs': 'Manage vendors with enforceable agreements and due diligence.',
-      'International Transfers': 'Control cross-border data flows with approved safeguards and documentation.'
-    };
-
-    const domainNavItems = new Map();
-    const questionBlocks = new Map();
-
-    function init() {
-      loadTheme();
-      loadSavedAnswers();
-      renderNavigation();
-      renderQuestionnaire();
-      updateProgress();
-      setupEventListeners();
-    }
-
-    function loadSavedAnswers() {
+    (async () => {
+      const moduleUrl = new URL('./complianceChecker.js', import.meta.url);
       try {
-        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed && typeof parsed === 'object') {
-            state.answers = parsed;
-            state.dirty = false;
-            saveStateLabel.textContent = 'Progress loaded';
+        const { createQuestionnaire, evaluateAnswers, generateReport, getMetadata } = await import(moduleUrl.href);
+
+        const metadata = getMetadata();
+        const questions = createQuestionnaire();
+        if (!Array.isArray(questions) || questions.length === 0) {
+          throw new Error('Questionnaire payload returned no entries.');
+        }
+
+        const questionMap = new Map(questions.map(q => [q.id, q]));
+        const totalQuestions = questions.length;
+        const appRoot = document.getElementById('appRoot');
+        const form = document.getElementById('questionnaireForm');
+        const questionnaireView = document.getElementById('questionnaireView');
+        const resultsView = document.getElementById('resultsView');
+        const progressCountEl = document.getElementById('progressCount');
+        const progressPercentEl = document.getElementById('progressPercent');
+        const progressBarEl = document.getElementById('progressBar');
+        const domainNav = document.getElementById('domainNav');
+        const saveProgressBtn = document.getElementById('saveProgressBtn');
+        const clearProgressBtn = document.getElementById('clearProgressBtn');
+        const editLaterBtn = document.getElementById('editLaterBtn');
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const scoreCards = document.getElementById('scoreCards');
+        const domainTableBody = document.getElementById('domainTableBody');
+        const strengthsList = document.getElementById('strengthsList');
+        const quickWinsList = document.getElementById('quickWinsList');
+        const next30List = document.getElementById('next30List');
+        const findingsContainer = document.getElementById('findingsContainer');
+        const editAnswersBtn = document.getElementById('editAnswersBtn');
+        const exportJsonBtn = document.getElementById('exportJsonBtn');
+        const printBtn = document.getElementById('printBtn');
+        const generatedAtEl = document.getElementById('generatedAt');
+        const mainContent = document.getElementById('mainContent');
+
+        document.getElementById('appTitle').textContent = `${metadata.appName}`;
+        document.getElementById('disclaimerBadge').textContent = metadata.disclaimer;
+
+        const LOCAL_STORAGE_KEY = 'crc-answers-v1';
+        const THEME_STORAGE_KEY = 'crc-theme';
+
+        const state = {
+          answers: {},
+          evaluation: null,
+          report: null,
+          view: 'questionnaire',
+          dirty: false,
+        };
+
+        const domainTotals = {};
+        questions.forEach(q => {
+          domainTotals[q.domain] = (domainTotals[q.domain] || 0) + 1;
+        });
+
+        const domainIntros = {
+          'Administrative Safeguards': 'Establish governance, policies, and workforce programs that underpin HIPAA security.',
+          'Physical Safeguards': 'Protect physical spaces and media housing sensitive health information.',
+          'Technical Safeguards': 'Apply technical controls to secure electronic protected health information (ePHI).',
+          'Breach Notification': 'Prepare to detect, evaluate, and report potential data breaches promptly.',
+          'Lawful Basis and Transparency': 'Demonstrate clear, lawful grounds and transparency for processing personal data.',
+          'Data Subject Rights': 'Operationalize workflows that honor individuals’ rights over their personal data.',
+          'DPIA and Records': 'Document processing activities and assess privacy risks for high-impact initiatives.',
+          'Security of Processing': 'Ensure technical and organizational measures match the risk profile of your processing.',
+          'Processors and DPAs': 'Manage vendors with enforceable agreements and due diligence.',
+          'International Transfers': 'Control cross-border data flows with approved safeguards and documentation.'
+        };
+
+        const domainNavItems = new Map();
+        const questionBlocks = new Map();
+        const domainSections = new Map();
+
+        function init() {
+          loadTheme();
+          loadSavedAnswers();
+          renderNavigation();
+          renderQuestionnaire();
+          updateProgress();
+          setupEventListeners();
+        }
+
+        function loadSavedAnswers() {
+          try {
+            const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              if (parsed && typeof parsed === 'object') {
+                state.answers = parsed;
+                state.dirty = false;
+                if (saveStateLabel) {
+                  saveStateLabel.textContent = 'Progress loaded';
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Unable to load saved answers', error);
           }
         }
-      } catch (error) {
-        console.error('Unable to load saved answers', error);
-      }
-    }
 
-    function loadTheme() {
-      const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-      if (storedTheme === 'dark' || storedTheme === 'light') {
-        appRoot.dataset.theme = storedTheme;
-        themeToggleBtn.setAttribute('aria-pressed', storedTheme === 'dark');
-      }
-    }
-
-    function setupEventListeners() {
-      saveProgressBtn.addEventListener('click', () => {
-        saveProgress();
-        showStatus('Progress saved locally. You can return later to continue.');
-      });
-
-      editLaterBtn.addEventListener('click', () => {
-        saveProgress();
-        showStatus('Progress saved. You may close the window when ready.');
-      });
-
-      clearProgressBtn.addEventListener('click', () => {
-        if (confirm('This will remove all answers and saved progress. Continue?')) {
-          clearProgress();
-          showStatus('All answers cleared.');
+        function loadTheme() {
+          const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+          if (storedTheme === 'dark' || storedTheme === 'light') {
+            appRoot.dataset.theme = storedTheme;
+            themeToggleBtn.setAttribute('aria-pressed', storedTheme === 'dark');
+          }
         }
-      });
 
-      form.addEventListener('submit', handleSubmit);
-      themeToggleBtn.addEventListener('click', toggleTheme);
-      editAnswersBtn.addEventListener('click', () => {
-        switchView('questionnaire');
-        mainContent.focus();
-        showStatus('You can adjust your answers below.');
-      });
+        function setupEventListeners() {
+          saveProgressBtn.addEventListener('click', () => {
+            saveProgress();
+            showStatus('Progress saved locally. You can return later to continue.');
+          });
 
-      exportJsonBtn.addEventListener('click', exportReportJson);
-      printBtn.addEventListener('click', () => window.print());
+          editLaterBtn.addEventListener('click', () => {
+            saveProgress();
+            showStatus('Progress saved. You may close the window when ready.');
+          });
 
-      window.addEventListener('beforeunload', (event) => {
-        if (state.dirty) {
-          event.preventDefault();
-          event.returnValue = '';
-        }
-      });
-    }
-
-    function toggleTheme() {
-      const nextTheme = appRoot.dataset.theme === 'dark' ? 'light' : 'dark';
-      appRoot.dataset.theme = nextTheme;
-      localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
-      themeToggleBtn.setAttribute('aria-pressed', nextTheme === 'dark');
-      showStatus(`Switched to ${nextTheme} theme.`);
-    }
-
-    function renderNavigation() {
-      domainNav.innerHTML = '';
-      metadata.standards.forEach(standard => {
-        const group = document.createElement('div');
-        group.className = 'nav-group';
-        const heading = document.createElement('h3');
-        heading.textContent = standard;
-        group.appendChild(heading);
-        const list = document.createElement('ul');
-        list.className = 'nav-items';
-        const domains = metadata.domains[standard] || [];
-        domains.forEach(domain => {
-          const li = document.createElement('li');
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'nav-link';
-          button.dataset.domain = domain;
-          button.innerHTML = `<span>${domain}</span>`;
-          const count = document.createElement('span');
-          count.className = 'domain-count';
-          count.textContent = `0 / ${domainTotals[domain] || 0}`;
-          button.appendChild(count);
-          button.addEventListener('click', () => {
-            const target = document.querySelector(`[data-domain-section="${domain}"]`);
-            if (target) {
-              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              target.querySelector('fieldset')?.focus();
+          clearProgressBtn.addEventListener('click', () => {
+            if (confirm('This will remove all answers and saved progress. Continue?')) {
+              clearProgress();
+              showStatus('All answers cleared.');
             }
           });
-          li.appendChild(button);
-          list.appendChild(li);
-          domainNavItems.set(domain, { button, countEl: count });
-        });
-        group.appendChild(list);
-        domainNav.appendChild(group);
-      });
-    }
 
-    function renderQuestionnaire() {
-      form.innerHTML = '';
-      const fragment = document.createDocumentFragment();
-      const domainsRendered = new Set();
-      questions.forEach(question => {
-        if (!domainsRendered.has(question.domain)) {
-          const section = document.createElement('section');
-          section.className = 'domain-section';
-          section.dataset.domainSection = question.domain;
-          section.id = `domain-${question.domain.replace(/\s+/g, '-').toLowerCase()}`;
-          const header = document.createElement('div');
-          header.className = 'domain-header';
-          const title = document.createElement('h2');
-          title.textContent = `${question.domain}`;
-          header.appendChild(title);
-          const intro = document.createElement('p');
-          intro.className = 'domain-intro';
-          intro.textContent = domainIntros[question.domain] || '';
-          header.appendChild(intro);
-          section.appendChild(header);
-          fragment.appendChild(section);
-          domainsRendered.add(question.domain);
-        }
-        const domainSection = fragment.querySelector(`[data-domain-section="${question.domain}"]`);
-        const block = createQuestionBlock(question);
-        domainSection.appendChild(block);
-      });
-      form.appendChild(fragment);
-    }
-
-    function createQuestionBlock(question) {
-      const fieldset = document.createElement('fieldset');
-      fieldset.className = 'question-block';
-      fieldset.dataset.questionId = question.id;
-      fieldset.tabIndex = -1;
-      const legend = document.createElement('legend');
-      const questionText = document.createElement('span');
-      questionText.textContent = question.text;
-      legend.appendChild(questionText);
-
-      const infoWrapper = document.createElement('span');
-      infoWrapper.className = 'info-wrapper';
-      const tooltipId = `tooltip-${question.id}`;
-      const infoButton = document.createElement('button');
-      infoButton.type = 'button';
-      infoButton.className = 'info-trigger';
-      infoButton.setAttribute('aria-describedby', tooltipId);
-      infoButton.setAttribute('aria-label', 'View guidance');
-      infoButton.textContent = 'i';
-      infoWrapper.appendChild(infoButton);
-      const tooltip = document.createElement('span');
-      tooltip.className = 'tooltip';
-      tooltip.id = tooltipId;
-      tooltip.role = 'tooltip';
-      tooltip.textContent = question.guidance;
-      infoWrapper.appendChild(tooltip);
-      legend.appendChild(infoWrapper);
-      fieldset.appendChild(legend);
-
-      const optionsContainer = document.createElement('div');
-      optionsContainer.className = 'options';
-      const name = question.id;
-
-      if (question.type === 'yes_no') {
-        optionsContainer.appendChild(createRadioOption(name, 'true', 'Yes'));
-        optionsContainer.appendChild(createRadioOption(name, 'false', 'No'));
-      } else if (question.type === 'scale_0_2') {
-        (question.choices || []).forEach(choice => {
-          optionsContainer.appendChild(createRadioOption(name, String(choice.value), choice.label));
-        });
-      } else if (question.type === 'multiple') {
-        (question.choices || []).forEach(choice => {
-          optionsContainer.appendChild(createRadioOption(name, String(choice.value), choice.label));
-        });
-      }
-
-      fieldset.appendChild(optionsContainer);
-      const error = document.createElement('p');
-      error.className = 'error-message';
-      error.id = `${question.id}-error`;
-      fieldset.appendChild(error);
-      questionBlocks.set(question.id, { fieldset, error });
-
-      return fieldset;
-    }
-
-    function createRadioOption(name, value, labelText) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'option';
-      const input = document.createElement('input');
-      input.type = 'radio';
-      input.name = name;
-      input.value = value;
-      input.id = `${name}-${value}`;
-      input.addEventListener('change', handleAnswerChange);
-      const label = document.createElement('label');
-      label.setAttribute('for', input.id);
-      label.textContent = labelText;
-      wrapper.appendChild(input);
-      wrapper.appendChild(label);
-
-      const existingAnswer = state.answers[name];
-      if (existingAnswer !== undefined) {
-        if (value === 'true' && existingAnswer === true) {
-          input.checked = true;
-        } else if (value === 'false' && existingAnswer === false) {
-          input.checked = true;
-        } else if (Number.isFinite(existingAnswer) && Number(value) === Number(existingAnswer)) {
-          input.checked = true;
-        } else if (typeof existingAnswer === 'string' && existingAnswer === value) {
-          input.checked = true;
-        }
-      }
-
-      return wrapper;
-    }
-
-    function handleAnswerChange(event) {
-      const questionId = event.target.name;
-      const question = questionMap.get(questionId);
-      if (!question) return;
-
-      let parsedValue;
-      if (question.type === 'yes_no') {
-        parsedValue = event.target.value === 'true';
-      } else if (question.type === 'scale_0_2') {
-        parsedValue = Number(event.target.value);
-      } else {
-        parsedValue = event.target.value;
-      }
-
-      state.answers[questionId] = parsedValue;
-      state.dirty = true;
-      saveStateLabel.textContent = 'Unsaved changes';
-      hideError(questionId);
-      updateProgress();
-    }
-
-    function hideError(questionId) {
-      const block = questionBlocks.get(questionId);
-      if (block) {
-        block.fieldset.classList.remove('has-error');
-        block.error.textContent = '';
-      }
-    }
-
-    function showError(questionId, message) {
-      const block = questionBlocks.get(questionId);
-      if (block) {
-        block.fieldset.classList.add('has-error');
-        block.error.textContent = message;
-      }
-    }
-
-    function updateProgress() {
-      const answered = questions.filter(q => Object.prototype.hasOwnProperty.call(state.answers, q.id)).length;
-      const percent = totalQuestions > 0 ? Math.round((answered / totalQuestions) * 100) : 0;
-      progressCountEl.textContent = `${answered} / ${totalQuestions} answered`;
-      progressPercentEl.textContent = `${percent}%`;
-      progressBarEl.style.width = `${percent}%`;
-
-      domainNavItems.forEach((item, domain) => {
-        const total = domainTotals[domain] || 0;
-        const answeredForDomain = questions.filter(q => q.domain === domain && Object.prototype.hasOwnProperty.call(state.answers, q.id)).length;
-        item.countEl.textContent = `${answeredForDomain} / ${total}`;
-        if (answeredForDomain === total && total > 0) {
-          item.button.classList.add('complete');
-        } else {
-          item.button.classList.remove('complete');
-        }
-      });
-    }
-
-    function validateForm() {
-      let isValid = true;
-      questions.forEach(question => {
-        const answered = Object.prototype.hasOwnProperty.call(state.answers, question.id);
-        if (!answered) {
-          isValid = false;
-          showError(question.id, 'Please select an answer for this question.');
-        }
-      });
-      if (!isValid) {
-        showStatus('Please answer all questions before submitting.', true);
-      }
-      return isValid;
-    }
-
-    function handleSubmit(event) {
-      event.preventDefault();
-      if (!validateForm()) {
-        const firstIncomplete = questions.find(q => !Object.prototype.hasOwnProperty.call(state.answers, q.id));
-        if (firstIncomplete) {
-          const block = questionBlocks.get(firstIncomplete.id);
-          block?.fieldset.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          block?.fieldset.focus();
-        }
-        return;
-      }
-
-      const evaluation = evaluateAnswers(state.answers);
-      const report = generateReport(evaluation);
-      state.evaluation = evaluation;
-      state.report = report;
-      renderResults(report);
-      switchView('results');
-      state.dirty = true; // Encourage saving after reviewing results
-      showStatus('Results generated. Review your findings below.');
-      resultsView.querySelector('h2')?.focus({ preventScroll: false });
-    }
-
-    function renderResults(report) {
-      scoreCards.innerHTML = '';
-      const cardsData = [
-        { label: 'Overall readiness', value: report.overallScore, accent: 'overall' },
-        { label: 'HIPAA score', value: report.perStandardScores.HIPAA, accent: 'hipaa' },
-        { label: 'GDPR score', value: report.perStandardScores.GDPR, accent: 'gdpr' }
-      ];
-
-      cardsData.forEach(card => {
-        const cardEl = document.createElement('div');
-        cardEl.className = 'card score-card';
-        const svg = createDonutSVG(card.value, card.accent);
-        cardEl.appendChild(svg);
-        const info = document.createElement('div');
-        info.className = 'score-info';
-        const valueEl = document.createElement('span');
-        valueEl.className = 'score-value';
-        valueEl.textContent = `${card.value.toFixed(1)}%`;
-        const labelEl = document.createElement('span');
-        labelEl.className = 'score-label';
-        labelEl.textContent = card.label;
-        info.appendChild(valueEl);
-        info.appendChild(labelEl);
-        const classificationEl = document.createElement('span');
-        classificationEl.className = 'pill';
-        if (card.label === 'Overall readiness') {
-          classificationEl.textContent = `Classification: ${report.classification}`;
-          info.appendChild(classificationEl);
-        }
-        cardEl.appendChild(info);
-        scoreCards.appendChild(cardEl);
-      });
-
-      domainTableBody.innerHTML = '';
-      report.perDomainScores.forEach(row => {
-        const tr = document.createElement('tr');
-        const domainCell = document.createElement('td');
-        domainCell.textContent = row.domain;
-        const standardCell = document.createElement('td');
-        standardCell.textContent = row.standard;
-        const scoreCell = document.createElement('td');
-        const bar = document.createElement('div');
-        bar.className = 'bar';
-        const fill = document.createElement('span');
-        fill.style.width = `${row.scorePercent.toFixed(1)}%`;
-        fill.style.background = getScoreColor(row.scorePercent);
-        bar.appendChild(fill);
-        const scoreLabel = document.createElement('div');
-        scoreLabel.textContent = `${row.scorePercent.toFixed(1)}%`;
-        scoreLabel.style.fontWeight = '600';
-        scoreLabel.style.marginTop = '0.3rem';
-        scoreCell.appendChild(bar);
-        scoreCell.appendChild(scoreLabel);
-        tr.appendChild(domainCell);
-        tr.appendChild(standardCell);
-        tr.appendChild(scoreCell);
-        domainTableBody.appendChild(tr);
-      });
-
-      renderList(strengthsList, report.strengths, 'No standout strengths recorded yet.');
-      renderList(quickWinsList, report.quickWins, 'Add quick remediation ideas to see them here.');
-      renderList(next30List, report.recommendedNext30Days, 'Define your next 30-day plan to populate this list.');
-      renderFindings(report.findings);
-      generatedAtEl.textContent = `Report generated: ${new Date(report.meta.generatedAtISO).toLocaleString()}`;
-    }
-
-    function renderList(container, items, emptyText) {
-      container.innerHTML = '';
-      if (!items || items.length === 0) {
-        const li = document.createElement('li');
-        li.textContent = emptyText;
-        container.appendChild(li);
-        return;
-      }
-      items.forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = item;
-        container.appendChild(li);
-      });
-    }
-
-    function renderFindings(findings) {
-      findingsContainer.innerHTML = '';
-      const severityOrder = ['High', 'Medium', 'Low'];
-      if (!findings || findings.length === 0) {
-        const card = document.createElement('div');
-        card.className = 'card';
-        const p = document.createElement('p');
-        p.textContent = 'No findings generated. Great job!';
-        card.appendChild(p);
-        findingsContainer.appendChild(card);
-        return;
-      }
-      severityOrder.forEach(level => {
-        const levelFindings = findings.filter(f => f.severity === level);
-        if (levelFindings.length === 0) return;
-        const section = document.createElement('section');
-        section.className = 'severity-section';
-        const heading = document.createElement('h3');
-        heading.className = 'severity-heading';
-        const tag = document.createElement('span');
-        tag.className = `severity-tag ${level.toLowerCase()}`;
-        tag.textContent = level;
-        heading.appendChild(tag);
-        heading.append(` ${level} severity findings`);
-        section.appendChild(heading);
-        levelFindings.forEach(finding => {
-          const details = document.createElement('details');
-          details.className = 'finding';
-          details.open = level === 'High';
-          const summary = document.createElement('summary');
-          summary.innerHTML = `<span>${finding.requirementSummary}</span>`;
-          const meta = document.createElement('span');
-          meta.className = 'finding-meta';
-          meta.innerHTML = `<span>${finding.standard}</span><span>•</span><span>${finding.domain}</span>`;
-          summary.appendChild(meta);
-          details.appendChild(summary);
-          const body = document.createElement('div');
-          body.className = 'finding-body';
-          const observed = document.createElement('p');
-          observed.innerHTML = `<strong>Observed status:</strong> ${finding.observedStatus}`;
-          const remediation = document.createElement('div');
-          remediation.innerHTML = '<strong>Recommended remediation steps:</strong>';
-          const remediationList = document.createElement('ul');
-          finding.remediationSteps.forEach(step => {
-            const li = document.createElement('li');
-            li.textContent = step;
-            remediationList.appendChild(li);
+          form.addEventListener('submit', handleSubmit);
+          themeToggleBtn.addEventListener('click', toggleTheme);
+          editAnswersBtn.addEventListener('click', () => {
+            switchView('questionnaire');
+            mainContent.focus();
+            showStatus('You can adjust your answers below.');
           });
-          remediation.appendChild(remediationList);
-          const evidence = document.createElement('div');
-          evidence.innerHTML = '<strong>Evidence to provide:</strong>';
-          const evidenceList = document.createElement('ul');
-          finding.evidenceToProvide.forEach(item => {
+
+          exportJsonBtn.addEventListener('click', exportReportJson);
+          printBtn.addEventListener('click', () => window.print());
+
+          window.addEventListener('beforeunload', (event) => {
+            if (state.dirty) {
+              event.preventDefault();
+              event.returnValue = '';
+            }
+          });
+        }
+
+        function toggleTheme() {
+          const nextTheme = appRoot.dataset.theme === 'dark' ? 'light' : 'dark';
+          appRoot.dataset.theme = nextTheme;
+          localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+          themeToggleBtn.setAttribute('aria-pressed', nextTheme === 'dark');
+          showStatus(`Switched to ${nextTheme} theme.`);
+        }
+
+        function renderNavigation() {
+          domainNav.innerHTML = '';
+          metadata.standards.forEach(standard => {
+            const group = document.createElement('div');
+            group.className = 'nav-group';
+            const heading = document.createElement('h3');
+            heading.textContent = standard;
+            group.appendChild(heading);
+            const list = document.createElement('ul');
+            list.className = 'nav-items';
+            const domains = metadata.domains[standard] || [];
+            domains.forEach(domain => {
+              const li = document.createElement('li');
+              const button = document.createElement('button');
+              button.type = 'button';
+              button.className = 'nav-link';
+              button.dataset.domain = domain;
+              button.innerHTML = `<span>${domain}</span>`;
+              const count = document.createElement('span');
+              count.className = 'domain-count';
+              count.textContent = `0 / ${domainTotals[domain] || 0}`;
+              button.appendChild(count);
+              button.addEventListener('click', () => {
+                const target = document.querySelector(`[data-domain-section="${domain}"]`);
+                if (target) {
+                  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  target.querySelector('fieldset')?.focus();
+                }
+              });
+              li.appendChild(button);
+              list.appendChild(li);
+              domainNavItems.set(domain, { button, countEl: count });
+            });
+            group.appendChild(list);
+            domainNav.appendChild(group);
+          });
+        }
+
+        function renderQuestionnaire() {
+          form.innerHTML = '';
+          questionBlocks.clear();
+          domainSections.clear();
+          const fragment = document.createDocumentFragment();
+          questions.forEach(question => {
+            let section = domainSections.get(question.domain);
+            if (!section) {
+              section = document.createElement('section');
+              section.className = 'domain-section';
+              section.dataset.domainSection = question.domain;
+              section.id = `domain-${question.domain.replace(/\s+/g, '-').toLowerCase()}`;
+              const header = document.createElement('div');
+              header.className = 'domain-header';
+              const title = document.createElement('h2');
+              title.textContent = `${question.domain}`;
+              header.appendChild(title);
+              const intro = document.createElement('p');
+              intro.className = 'domain-intro';
+              intro.textContent = domainIntros[question.domain] || '';
+              header.appendChild(intro);
+              section.appendChild(header);
+              fragment.appendChild(section);
+              domainSections.set(question.domain, section);
+            }
+            const block = createQuestionBlock(question);
+            section.appendChild(block);
+          });
+          form.appendChild(fragment);
+        }
+
+        function createQuestionBlock(question) {
+          const fieldset = document.createElement('fieldset');
+          fieldset.className = 'question-block';
+          fieldset.dataset.questionId = question.id;
+          fieldset.tabIndex = -1;
+          const legend = document.createElement('legend');
+          const questionText = document.createElement('span');
+          questionText.textContent = question.text;
+          legend.appendChild(questionText);
+
+          const infoWrapper = document.createElement('span');
+          infoWrapper.className = 'info-wrapper';
+          const tooltipId = `tooltip-${question.id}`;
+          const infoButton = document.createElement('button');
+          infoButton.type = 'button';
+          infoButton.className = 'info-trigger';
+          infoButton.setAttribute('aria-describedby', tooltipId);
+          infoButton.setAttribute('aria-label', 'View guidance');
+          infoButton.textContent = 'i';
+          infoWrapper.appendChild(infoButton);
+          const tooltip = document.createElement('span');
+          tooltip.className = 'tooltip';
+          tooltip.id = tooltipId;
+          tooltip.role = 'tooltip';
+          tooltip.textContent = question.guidance;
+          infoWrapper.appendChild(tooltip);
+          legend.appendChild(infoWrapper);
+          fieldset.appendChild(legend);
+
+          const optionsContainer = document.createElement('div');
+          optionsContainer.className = 'options';
+          const name = question.id;
+
+          if (question.type === 'yes_no') {
+            optionsContainer.appendChild(createRadioOption(name, 'true', 'Yes'));
+            optionsContainer.appendChild(createRadioOption(name, 'false', 'No'));
+          } else if (question.type === 'scale_0_2') {
+            (question.choices || []).forEach(choice => {
+              optionsContainer.appendChild(createRadioOption(name, String(choice.value), choice.label));
+            });
+          } else if (question.type === 'multiple') {
+            (question.choices || []).forEach(choice => {
+              optionsContainer.appendChild(createRadioOption(name, String(choice.value), choice.label));
+            });
+          }
+
+          fieldset.appendChild(optionsContainer);
+          const error = document.createElement('p');
+          error.className = 'error-message';
+          error.id = `${question.id}-error`;
+          fieldset.appendChild(error);
+          questionBlocks.set(question.id, { fieldset, error });
+
+          return fieldset;
+        }
+
+        function createRadioOption(name, value, labelText) {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'option';
+          const input = document.createElement('input');
+          input.type = 'radio';
+          input.name = name;
+          input.value = value;
+          input.id = `${name}-${value}`;
+          input.addEventListener('change', handleAnswerChange);
+          const label = document.createElement('label');
+          label.setAttribute('for', input.id);
+          label.textContent = labelText;
+          wrapper.appendChild(input);
+          wrapper.appendChild(label);
+
+          const existingAnswer = state.answers[name];
+          if (existingAnswer !== undefined) {
+            if (value === 'true' && existingAnswer === true) {
+              input.checked = true;
+            } else if (value === 'false' && existingAnswer === false) {
+              input.checked = true;
+            } else if (Number.isFinite(existingAnswer) && Number(value) === Number(existingAnswer)) {
+              input.checked = true;
+            } else if (typeof existingAnswer === 'string' && existingAnswer === value) {
+              input.checked = true;
+            }
+          }
+
+          return wrapper;
+        }
+
+        function handleAnswerChange(event) {
+          const questionId = event.target.name;
+          const question = questionMap.get(questionId);
+          if (!question) return;
+
+          let parsedValue;
+          if (question.type === 'yes_no') {
+            parsedValue = event.target.value === 'true';
+          } else if (question.type === 'scale_0_2') {
+            parsedValue = Number(event.target.value);
+          } else {
+            parsedValue = event.target.value;
+          }
+
+          state.answers[questionId] = parsedValue;
+          state.dirty = true;
+          if (saveStateLabel) {
+            saveStateLabel.textContent = 'Unsaved changes';
+          }
+          hideError(questionId);
+          updateProgress();
+        }
+
+        function hideError(questionId) {
+          const block = questionBlocks.get(questionId);
+          if (block) {
+            block.fieldset.classList.remove('has-error');
+            block.error.textContent = '';
+          }
+        }
+
+        function showError(questionId, message) {
+          const block = questionBlocks.get(questionId);
+          if (block) {
+            block.fieldset.classList.add('has-error');
+            block.error.textContent = message;
+          }
+        }
+
+        function updateProgress() {
+          const answered = questions.filter(q => Object.prototype.hasOwnProperty.call(state.answers, q.id)).length;
+          const percent = totalQuestions > 0 ? Math.round((answered / totalQuestions) * 100) : 0;
+          progressCountEl.textContent = `${answered} / ${totalQuestions} answered`;
+          progressPercentEl.textContent = `${percent}%`;
+          progressBarEl.style.width = `${percent}%`;
+
+          domainNavItems.forEach((item, domain) => {
+            const total = domainTotals[domain] || 0;
+            const answeredForDomain = questions.filter(q => q.domain === domain && Object.prototype.hasOwnProperty.call(state.answers, q.id)).length;
+            item.countEl.textContent = `${answeredForDomain} / ${total}`;
+            if (answeredForDomain === total && total > 0) {
+              item.button.classList.add('complete');
+            } else {
+              item.button.classList.remove('complete');
+            }
+          });
+        }
+
+        function validateForm() {
+          let isValid = true;
+          questions.forEach(question => {
+            const answered = Object.prototype.hasOwnProperty.call(state.answers, question.id);
+            if (!answered) {
+              isValid = false;
+              showError(question.id, 'Please select an answer for this question.');
+            }
+          });
+          if (!isValid) {
+            showStatus('Please answer all questions before submitting.', true);
+          }
+          return isValid;
+        }
+
+        function handleSubmit(event) {
+          event.preventDefault();
+          if (!validateForm()) {
+            const firstIncomplete = questions.find(q => !Object.prototype.hasOwnProperty.call(state.answers, q.id));
+            if (firstIncomplete) {
+              const block = questionBlocks.get(firstIncomplete.id);
+              block?.fieldset.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              block?.fieldset.focus();
+            }
+            return;
+          }
+
+          const evaluation = evaluateAnswers(state.answers);
+          const report = generateReport(evaluation);
+          state.evaluation = evaluation;
+          state.report = report;
+          renderResults(report);
+          switchView('results');
+          state.dirty = true; // Encourage saving after reviewing results
+          showStatus('Results generated. Review your findings below.');
+          resultsView.querySelector('h2')?.focus({ preventScroll: false });
+        }
+
+        function renderResults(report) {
+          scoreCards.innerHTML = '';
+          const cardsData = [
+            { label: 'Overall readiness', value: report.overallScore, accent: 'overall' },
+            { label: 'HIPAA score', value: report.perStandardScores.HIPAA, accent: 'hipaa' },
+            { label: 'GDPR score', value: report.perStandardScores.GDPR, accent: 'gdpr' }
+          ];
+
+          cardsData.forEach(card => {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'card score-card';
+            const svg = createDonutSVG(card.value);
+            cardEl.appendChild(svg);
+            const info = document.createElement('div');
+            info.className = 'score-info';
+            const valueEl = document.createElement('span');
+            valueEl.className = 'score-value';
+            valueEl.textContent = `${card.value.toFixed(1)}%`;
+            const labelEl = document.createElement('span');
+            labelEl.className = 'score-label';
+            labelEl.textContent = card.label;
+            info.appendChild(valueEl);
+            info.appendChild(labelEl);
+            const classificationEl = document.createElement('span');
+            classificationEl.className = 'pill';
+            if (card.label === 'Overall readiness') {
+              classificationEl.textContent = `Classification: ${report.classification}`;
+              info.appendChild(classificationEl);
+            }
+            cardEl.appendChild(info);
+            scoreCards.appendChild(cardEl);
+          });
+
+          domainTableBody.innerHTML = '';
+          report.perDomainScores.forEach(row => {
+            const tr = document.createElement('tr');
+            const domainCell = document.createElement('td');
+            domainCell.textContent = row.domain;
+            const standardCell = document.createElement('td');
+            standardCell.textContent = row.standard;
+            const scoreCell = document.createElement('td');
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            const fill = document.createElement('span');
+            fill.style.width = `${row.scorePercent.toFixed(1)}%`;
+            fill.style.background = getScoreColor(row.scorePercent);
+            bar.appendChild(fill);
+            const scoreLabel = document.createElement('div');
+            scoreLabel.textContent = `${row.scorePercent.toFixed(1)}%`;
+            scoreLabel.style.fontWeight = '600';
+            scoreLabel.style.marginTop = '0.3rem';
+            scoreCell.appendChild(bar);
+            scoreCell.appendChild(scoreLabel);
+            tr.appendChild(domainCell);
+            tr.appendChild(standardCell);
+            tr.appendChild(scoreCell);
+            domainTableBody.appendChild(tr);
+          });
+
+          renderList(strengthsList, report.strengths, 'No standout strengths recorded yet.');
+          renderList(quickWinsList, report.quickWins, 'Add quick remediation ideas to see them here.');
+          renderList(next30List, report.recommendedNext30Days, 'Define your next 30-day plan to populate this list.');
+          renderFindings(report.findings);
+          generatedAtEl.textContent = `Report generated: ${new Date(report.meta.generatedAtISO).toLocaleString()}`;
+        }
+
+        function renderList(container, items, emptyText) {
+          container.innerHTML = '';
+          if (!items || items.length === 0) {
+            const li = document.createElement('li');
+            li.textContent = emptyText;
+            container.appendChild(li);
+            return;
+          }
+          items.forEach(item => {
             const li = document.createElement('li');
             li.textContent = item;
-            evidenceList.appendChild(li);
+            container.appendChild(li);
           });
-          evidence.appendChild(evidenceList);
-          const citation = document.createElement('p');
-          citation.innerHTML = `<strong>Citation:</strong> ${finding.citation}`;
-          body.appendChild(observed);
-          body.appendChild(remediation);
-          body.appendChild(evidence);
-          body.appendChild(citation);
-          details.appendChild(body);
-          section.appendChild(details);
-        });
-        findingsContainer.appendChild(section);
-      });
-    }
+        }
 
-    function getScoreColor(percent) {
-      if (percent >= 80) return 'var(--color-success)';
-      if (percent >= 50) return 'var(--color-warning)';
-      return 'var(--color-danger)';
-    }
+        function renderFindings(findings) {
+          findingsContainer.innerHTML = '';
+          const severityOrder = ['High', 'Medium', 'Low'];
+          if (!findings || findings.length === 0) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            const p = document.createElement('p');
+            p.textContent = 'No findings generated. Great job!';
+            card.appendChild(p);
+            findingsContainer.appendChild(card);
+            return;
+          }
+          severityOrder.forEach(level => {
+            const levelFindings = findings.filter(f => f.severity === level);
+            if (levelFindings.length === 0) return;
+            const section = document.createElement('section');
+            section.className = 'severity-section';
+            const heading = document.createElement('h3');
+            heading.className = 'severity-heading';
+            const tag = document.createElement('span');
+            tag.className = `severity-tag ${level.toLowerCase()}`;
+            tag.textContent = level;
+            heading.appendChild(tag);
+            heading.append(` ${level} severity findings`);
+            section.appendChild(heading);
+            levelFindings.forEach(finding => {
+              const details = document.createElement('details');
+              details.className = 'finding';
+              details.open = level === 'High';
+              const summary = document.createElement('summary');
+              summary.innerHTML = `<span>${finding.requirementSummary}</span>`;
+              const meta = document.createElement('span');
+              meta.className = 'finding-meta';
+              meta.innerHTML = `<span>${finding.standard}</span><span>•</span><span>${finding.domain}</span>`;
+              summary.appendChild(meta);
+              details.appendChild(summary);
+              const body = document.createElement('div');
+              body.className = 'finding-body';
+              const observed = document.createElement('p');
+              observed.innerHTML = `<strong>Observed status:</strong> ${finding.observedStatus}`;
+              const remediation = document.createElement('div');
+              remediation.innerHTML = '<strong>Recommended remediation steps:</strong>';
+              const remediationList = document.createElement('ul');
+              finding.remediationSteps.forEach(step => {
+                const li = document.createElement('li');
+                li.textContent = step;
+                remediationList.appendChild(li);
+              });
+              remediation.appendChild(remediationList);
+              const evidence = document.createElement('div');
+              evidence.innerHTML = '<strong>Evidence to provide:</strong>';
+              const evidenceList = document.createElement('ul');
+              finding.evidenceToProvide.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item;
+                evidenceList.appendChild(li);
+              });
+              evidence.appendChild(evidenceList);
+              const citation = document.createElement('p');
+              citation.innerHTML = `<strong>Citation:</strong> ${finding.citation}`;
+              body.appendChild(observed);
+              body.appendChild(remediation);
+              body.appendChild(evidence);
+              body.appendChild(citation);
+              details.appendChild(body);
+              section.appendChild(details);
+            });
+            findingsContainer.appendChild(section);
+          });
+        }
 
-    function createDonutSVG(percent, key) {
-      const radius = 48;
-      const circumference = 2 * Math.PI * radius;
-      const offset = circumference - (percent / 100) * circumference;
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('viewBox', '0 0 120 120');
-      svg.classList.add('donut');
+        function getScoreColor(percent) {
+          if (percent >= 80) return 'var(--color-success)';
+          if (percent >= 50) return 'var(--color-warning)';
+          return 'var(--color-danger)';
+        }
 
-      const circleBg = document.createElementNS(svgNS, 'circle');
-      circleBg.setAttribute('cx', '60');
-      circleBg.setAttribute('cy', '60');
-      circleBg.setAttribute('r', String(radius));
-      circleBg.setAttribute('fill', 'transparent');
-      circleBg.setAttribute('stroke', 'rgba(82, 96, 109, 0.2)');
-      circleBg.setAttribute('stroke-width', '12');
-      svg.appendChild(circleBg);
+        function createDonutSVG(percent) {
+          const radius = 48;
+          const circumference = 2 * Math.PI * radius;
+          const offset = circumference - (percent / 100) * circumference;
+          const svgNS = 'http://www.w3.org/2000/svg';
+          const svg = document.createElementNS(svgNS, 'svg');
+          svg.setAttribute('viewBox', '0 0 120 120');
+          svg.classList.add('donut');
 
-      const circle = document.createElementNS(svgNS, 'circle');
-      circle.setAttribute('cx', '60');
-      circle.setAttribute('cy', '60');
-      circle.setAttribute('r', String(radius));
-      circle.setAttribute('fill', 'transparent');
-      circle.setAttribute('stroke', getScoreColor(percent));
-      circle.setAttribute('stroke-width', '12');
-      circle.setAttribute('stroke-dasharray', `${circumference} ${circumference}`);
-      circle.setAttribute('stroke-dashoffset', String(offset));
-      circle.setAttribute('stroke-linecap', 'round');
-      circle.setAttribute('transform', 'rotate(-90 60 60)');
-      svg.appendChild(circle);
+          const circleBg = document.createElementNS(svgNS, 'circle');
+          circleBg.setAttribute('cx', '60');
+          circleBg.setAttribute('cy', '60');
+          circleBg.setAttribute('r', String(radius));
+          circleBg.setAttribute('fill', 'transparent');
+          circleBg.setAttribute('stroke', 'rgba(82, 96, 109, 0.2)');
+          circleBg.setAttribute('stroke-width', '12');
+          svg.appendChild(circleBg);
 
-      const text = document.createElementNS(svgNS, 'text');
-      text.setAttribute('x', '50%');
-      text.setAttribute('y', '50%');
-      text.setAttribute('dominant-baseline', 'middle');
-      text.setAttribute('text-anchor', 'middle');
-      text.textContent = `${percent.toFixed(0)}%`;
-      svg.appendChild(text);
+          const circle = document.createElementNS(svgNS, 'circle');
+          circle.setAttribute('cx', '60');
+          circle.setAttribute('cy', '60');
+          circle.setAttribute('r', String(radius));
+          circle.setAttribute('fill', 'transparent');
+          circle.setAttribute('stroke', getScoreColor(percent));
+          circle.setAttribute('stroke-width', '12');
+          circle.setAttribute('stroke-dasharray', `${circumference} ${circumference}`);
+          circle.setAttribute('stroke-dashoffset', String(offset));
+          circle.setAttribute('stroke-linecap', 'round');
+          circle.setAttribute('transform', 'rotate(-90 60 60)');
+          svg.appendChild(circle);
 
-      return svg;
-    }
+          const text = document.createElementNS(svgNS, 'text');
+          text.setAttribute('x', '50%');
+          text.setAttribute('y', '50%');
+          text.setAttribute('dominant-baseline', 'middle');
+          text.setAttribute('text-anchor', 'middle');
+          text.textContent = `${percent.toFixed(0)}%`;
+          svg.appendChild(text);
 
-    function switchView(view) {
-      state.view = view;
-      if (view === 'results') {
-        questionnaireView.hidden = true;
-        resultsView.hidden = false;
-      } else {
-        questionnaireView.hidden = false;
-        resultsView.hidden = true;
-      }
-    }
+          return svg;
+        }
 
-    function saveProgress() {
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state.answers));
-        state.dirty = false;
-        saveStateLabel.textContent = 'Progress saved';
+        function switchView(view) {
+          state.view = view;
+          if (view === 'results') {
+            questionnaireView.hidden = true;
+            resultsView.hidden = false;
+          } else {
+            questionnaireView.hidden = false;
+            resultsView.hidden = true;
+          }
+        }
+
+        function saveProgress() {
+          try {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state.answers));
+            state.dirty = false;
+            if (saveStateLabel) {
+              saveStateLabel.textContent = 'Progress saved';
+            }
+          } catch (error) {
+            console.error('Unable to save progress', error);
+            showStatus('Saving failed. Check browser storage permissions.', true);
+          }
+        }
+
+        function clearProgress() {
+          state.answers = {};
+          state.evaluation = null;
+          state.report = null;
+          state.dirty = false;
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+          renderQuestionnaire();
+          updateProgress();
+          switchView('questionnaire');
+          if (saveStateLabel) {
+            saveStateLabel.textContent = 'Cleared';
+          }
+        }
+
+        function exportReportJson() {
+          if (!state.report) {
+            showStatus('Generate results before exporting.', true);
+            return;
+          }
+          const blob = new Blob([JSON.stringify(state.report, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `compliance-readiness-report-${Date.now()}.json`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          showStatus('Report downloaded as JSON.');
+        }
+
+        function showStatus(message, isError = false) {
+          if (!statusRegion) return;
+          statusRegion.textContent = message;
+          statusRegion.style.color = isError ? 'var(--color-danger)' : 'var(--color-success)';
+        }
+
+        init();
       } catch (error) {
-        console.error('Unable to save progress', error);
-        showStatus('Saving failed. Check browser storage permissions.', true);
+        console.error('Unable to initialize the Compliance Readiness Checker.', error);
+        if (statusRegion) {
+          statusRegion.textContent = 'Unable to load questionnaire data. Please refresh or confirm complianceChecker.js is deployed alongside index.html.';
+          statusRegion.style.color = 'var(--color-danger)';
+        }
+        if (saveStateLabel) {
+          saveStateLabel.textContent = 'Load failed';
+        }
       }
-    }
-
-    function clearProgress() {
-      state.answers = {};
-      state.evaluation = null;
-      state.report = null;
-      state.dirty = false;
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-      questionBlocks.clear();
-      renderQuestionnaire();
-      updateProgress();
-      switchView('questionnaire');
-      saveStateLabel.textContent = 'Cleared';
-    }
-
-    function exportReportJson() {
-      if (!state.report) {
-        showStatus('Generate results before exporting.', true);
-        return;
-      }
-      const blob = new Blob([JSON.stringify(state.report, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `compliance-readiness-report-${Date.now()}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      showStatus('Report downloaded as JSON.');
-    }
-
-    function showStatus(message, isError = false) {
-      statusRegion.textContent = message;
-      statusRegion.style.color = isError ? 'var(--color-danger)' : 'var(--color-success)';
-    }
-
-    init();
+    })();
   </script>
 </body>
 </html>
